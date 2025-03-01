@@ -20,6 +20,7 @@ import ResetPasswordPage from "./pages/resetPasswordPage";
 import PricingPage from "./pages/pricingPage";
 import SuccessPage from "./paymentInfoPages/successPage";
 import SiteHeader from "./components/header";
+import PageNotFound from "./pages/pageNotFound";
 
 function App() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -59,7 +60,8 @@ function App() {
     <div className="App">
       <ToastContainer />
       <Routes>
-        <Route path="/" element={<Navigate to={"/user/ai-chatbot"} />} />
+        <Route path="/" element={<Navigate to={"/home"} />} />
+        <Route path="*" element={<PageNotFound />} />
         <Route path="/auth/user">
           <Route path="login" element={<LoginPage />} />
           <Route path="register" element={<RegisterPage />} />
@@ -77,6 +79,7 @@ function App() {
               </PrivateRoutes>
             }
           />
+          <Route path="*" element={<PageNotFound />} />
           <Route
             path="pricing"
             element={

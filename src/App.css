@@ -5,6 +5,15 @@
   box-sizing: border-box;
   font-family: "Nunito", serif;
 }
+body,
+html {
+  width: 100%;
+  height: 100%;
+}
+#root {
+  width: 100%;
+  height: 100%;
+}
 .hide-scrollbar::-webkit-scrollbar {
   display: none;
 }

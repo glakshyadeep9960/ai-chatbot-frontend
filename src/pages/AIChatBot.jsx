@@ -12,7 +12,6 @@ import axios from "axios";
 import { baseUrl } from "../utils/apiSettings";
 import { showErrorMessage, showSuccessMessage } from "../utils/toast";
 import { useNavigate } from "react-router-dom";
-import ParentLayout from "../layouts/parentLayout";
 const HomePage = () => {
   const [isMessagesFetched, setIsMessagesFetched] = useState(null);
 
@@ -354,7 +353,7 @@ const HomePage = () => {
   return (
     <div className="w-full  h-screen overflow-y-hidden bg-[#212121] flex items-stretch">
       <div
-        className={`xl:w-[16%] xl:relative text-[14px] text-white bg-[#171717] h-full p-[15px] flex flex-col  items-start gap-[12px] w-[70%] fixed left-0 top-0 z-[99] ${
+        className={`xl:w-[16%] xl:relative text-[14px] text-white bg-[#171717] h-full p-[15px] flex flex-col  items-start gap-[12px] w-[70%] sm:w-[40%] fixed left-0 top-0 z-[99] ${
           openSidebar === true
             ? "translate-x-0 transition-all"
             : openSidebar === false
@@ -457,23 +456,25 @@ const HomePage = () => {
             onClick={handleOpenSidebar}
             className="text-[20px] cursor-pointer xl:hidden"
           />
-          <button
-            onClick={() => {
-              navigate("/user/");
-            }}
-            className="px-[20px] py-[7px] text-white rounded-[7px] bg-black"
-          >
-            Back
-          </button>
-          <button
-            onClick={() => {
-              localStorage.removeItem("userToken");
-              navigate("/auth/user/login");
-            }}
-            className="px-[20px] py-[7px] text-white rounded-[7px] bg-black"
-          >
-            Logout
-          </button>
+          <div className="flex items-center gap-[12px]">
+            <button
+              onClick={() => {
+                navigate("/user/");
+              }}
+              className="px-[20px] py-[7px] text-white rounded-[7px] bg-black"
+            >
+              Back
+            </button>
+            <button
+              onClick={() => {
+                localStorage.removeItem("userToken");
+                navigate("/auth/user/login");
+              }}
+              className="px-[20px] py-[7px] text-white rounded-[7px] bg-black"
+            >
+              Logout
+            </button>
+          </div>
         </div>
         <div className="w-full xl:w-[85%]  flex flex-col items-center gap-[20px]">
           {messages?.length !== 0 ? (
