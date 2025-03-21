@@ -21,6 +21,7 @@ import PricingPage from "./pages/pricingPage";
 import SuccessPage from "./paymentInfoPages/successPage";
 import SiteHeader from "./components/header";
 import PageNotFound from "./pages/pageNotFound";
+import Home from "./pages/home";
 
 function App() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -30,7 +31,7 @@ function App() {
   if (token) {
     localStorage.setItem("userToken", token);
 
-    window.location.href = "/";
+    window.location.href = "/user/";
   }
   const location = useLocation();
   const userToken = localStorage.getItem("userToken");
@@ -61,6 +62,7 @@ function App() {
       <ToastContainer />
       <Routes>
         <Route path="/" element={<Navigate to={"/home"} />} />
+        <Route path="/home" element={<Home />} />
         <Route path="*" element={<PageNotFound />} />
         <Route path="/auth/user">
           <Route path="login" element={<LoginPage />} />
