@@ -15,7 +15,7 @@ const RegisterPage = () => {
 
     try {
       // Initiate the passport authentication flow
-      window.location.href = "http://localhost:8080/api/v1/auth/google";
+      window.location.href = `${baseUrl}/api/v1/auth/google`;
     } catch (error) {
       console.error("Error during Google login:", error);
     }
