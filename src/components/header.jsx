@@ -14,7 +14,7 @@ const SiteHeader = () => {
       <ul className="hidden xl:flex items-center gap-[20px]">
         <Link to={"/user/ai-chatbot"}>AI CHATBOT</Link>
         <Link to={"/user/pricing"}>PRICING</Link>
-        <Link to={"/user/contact"}>CONTACT</Link>
+        {/* <Link to={"/user/contact"}>CONTACT</Link> */}
       </ul>
       <div className=" hidden xl:flex items-center gap-[12px]">
         <button className="px-[20px] py-[12px] bg-black rounded-[7px] text-white">
@@ -37,7 +37,7 @@ const SiteHeader = () => {
         <ul className="flex flex-col items-center gap-[20px]">
           <Link to={"/user/ai-chatbot"}>AI CHATBOT</Link>
           <Link to={"/user/pricing"}>PRICING</Link>
-          <Link to={"/user/contact"}>CONTACT</Link>
+          {/* <Link to={"/user/contact"}>CONTACT</Link> */}
         </ul>
         <div className=" flex justify-center items-center gap-[12px]">
           <button className="px-[20px] py-[12px] bg-white rounded-[7px] text-black">

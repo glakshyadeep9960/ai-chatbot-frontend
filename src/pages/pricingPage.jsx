@@ -4,7 +4,7 @@ import { FaCheck } from "react-icons/fa6";
 import { baseUrl } from "../utils/apiSettings";
 import ParentLayout from "../layouts/parentLayout";
 
-const PricingPage = () => {
+const PricingPage = ({ user }) => {
   const token = localStorage.getItem("userToken");
   const handleMonthlyPlan = async () => {
     await axios({
@@ -44,6 +44,7 @@ const PricingPage = () => {
         console.log(err);
       });
   };
+
   return (
     <ParentLayout>
       <div className="w-full flex flex-col items-center gap-[40px] bg-[#070c18] xl:h-full p-[20px] sm:p-[80px]">
@@ -57,7 +58,7 @@ const PricingPage = () => {
           <p>Here are the plans:</p>
         </div>
         <div className="w-full flex items-stretch flex-wrap xl:flex-nowrap justify-center gap-[20px]">
-          <div className="w-full sm:w-[45%] xl:w-[30%] border border-[#49477b] p-[20px] flex flex-col gap-[20px] rounded-[20px]">
+          {/* <div className="w-full sm:w-[45%] xl:w-[30%] border border-[#49477b] p-[20px] flex flex-col gap-[20px] rounded-[20px]">
             <div className="w-full text-[#5e5b9e] flex flex-col gap-[7px]">
               <h3 className="text-white">Basic</h3>
               <p>For Monthly Basis</p>
@@ -67,11 +68,11 @@ const PricingPage = () => {
               <div className="w-full text-[#5e5b9e] flex items-start justify-center flex-col gap-[7px] text-[15px]">
                 <div className="flex items-center gap-[7px]">
                   <FaCheck />
-                  <p>Lorem ipsum dolor sit amet.</p>
+                  <p>By Default User going to have this.</p>
                 </div>{" "}
                 <div className="flex items-center gap-[7px]">
                   <FaCheck />
-                  <p>Lorem ipsum dolor sit amet. amet.</p>
+                  <p>.</p>
                 </div>{" "}
                 <div className="flex items-center gap-[7px]">
                   <FaCheck />
@@ -90,7 +91,7 @@ const PricingPage = () => {
             <button className="bg-[#3b23ff] px-[20px] py-[12px] rounded-[7px] text-white">
               Subscribe Now
             </button>
-          </div>
+          </div> */}
 
           <div className="w-full sm:w-[45%] xl:w-[30%] border border-[#49477b] p-[20px] flex flex-col gap-[20px] rounded-[20px]">
             <div className="w-full text-[#5e5b9e] flex flex-col gap-[7px]">
@@ -103,7 +104,7 @@ const PricingPage = () => {
               <div className="w-full text-[#5e5b9e] flex items-start justify-center flex-col gap-[7px] text-[15px]">
                 <div className="flex items-center gap-[7px]">
                   <FaCheck />
-                  <p>Lorem ipsum dolor sit amet.</p>
+                  <p>Upto 200 Messages can be ask to AI.</p>
                 </div>{" "}
                 <div className="flex items-center gap-[7px]">
                   <FaCheck />
@@ -132,7 +133,7 @@ const PricingPage = () => {
           </div>
           <div className="w-full sm:w-[45%] xl:w-[30%] border border-[#49477b] p-[20px] flex flex-col gap-[20px] rounded-[20px]">
             <div className="w-full text-[#5e5b9e] flex flex-col gap-[7px]">
-              <h3 className="text-white">Yearly</h3>
+              <h3 className="text-white">Master</h3>
               <p>For Yearly Basis</p>
               <h2 className="text-[52px] text-white">
                 $500/
@@ -141,7 +142,7 @@ const PricingPage = () => {
               <div className="w-full text-[#5e5b9e] flex items-start justify-center flex-col gap-[7px] text-[15px]">
                 <div className="flex items-center gap-[7px]">
                   <FaCheck />
-                  <p>Lorem ipsum dolor sit amet.</p>
+                  <p>Upto 1000 Messages can be ask to AI.</p>
                 </div>{" "}
                 <div className="flex items-center gap-[7px]">
                   <FaCheck />

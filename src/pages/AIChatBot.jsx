@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import {
   FaBarsStaggered,
   FaPaperclip,
@@ -11,25 +11,71 @@ import {
 import axios from "axios";
 import { baseUrl } from "../utils/apiSettings";
 import { showErrorMessage, showSuccessMessage } from "../utils/toast";
-import { useNavigate } from "react-router-dom";
-const HomePage = () => {
-  const [isMessagesFetched, setIsMessagesFetched] = useState(null);
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import SiteHeader from "../components/header";
 
+// Skeleton Components
+const MessageSkeleton = ({ isUser = false }) => (
+  <div
+    className={`animate-pulse w-full flex ${isUser ? "self-end" : "self-start"} gap-[10px]`}
+  >
+    <div
+      className={`w-[90%] xl:w-[70%] p-[20px] bg-[#171717] rounded-[7px] h-[60px] xl:min-w-[70%] xl:max-w-[85%]`}
+    ></div>
+  </div>
+);
+
+const FetchingMessagesSkeleton = () => (
+  <div className="w-full h-[550px] flex flex-col gap-[12px] p-4 overflow-hidden">
+    {[1, 2, 3].map((i) => (
+      <MessageSkeleton key={i} />
+    ))}
+    <MessageSkeleton isUser />
+    <div className="flex self-end w-[90%] xl:w-[70%] p-[20px] bg-[#171717] rounded-[7px] h-[80px] animate-pulse"></div>
+  </div>
+);
+
+const QuerySendingSkeleton = () => (
+  <div className="w-full xl:w-[70%] p-[15px] bg-[#2f2f2f] text-white font-normal rounded-[12px] text-[16px] flex flex-col gap-[12px]">
+    <div className="flex items-center gap-[12px]">
+      <div className="flex gap-[7px] justify-center items-center relative animate-pulse">
+        <div className="w-6 h-6 bg-gray-600 rounded-full"></div>
+      </div>
+      <div className="w-full h-[70px] bg-[#171717] rounded-lg animate-pulse"></div>
+      <div className="w-8 h-8 bg-gray-600 rounded-full animate-pulse"></div>
+    </div>
+  </div>
+);
+
+const HomePage = ({ user }) => {
+  const [isMessagesFetched, setIsMessagesFetched] = useState(null);
+  const [isMessageLoading, setIsMessageLoading] = useState(false);
+  const [isQuerySending, setIsQuerySending] = useState(false);
+  const [querySkeleton, setQuerySkeleton] = useState(false);
+  const [error, setError] = useState(null);
   const urlParams = new URLSearchParams(window.location.search);
   const chatIdParams = urlParams.get("chat");
+  useEffect(() => {
+    if (user?.messageLimit <= 0) {
+      setError("You have used your free tier! Upgrade your plan.");
+    }
+  }, [user]);
+
   useEffect(() => {
     if (chatIdParams) {
       handleFetchMessages(chatIdParams);
     }
   }, [window.location.search]);
+
   const token = localStorage.getItem("userToken");
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
+  const [chats, setChats] = useState([]);
+  const [messages, setMessages] = useState([]);
+
   const handleQueryValue = (e) => {
     setQuery(e.target.value);
   };
-  const [chats, setChats] = useState([]);
-  const [messages, setMessages] = useState([]);
 
   const handleCreateNewChat = async () => {
     navigate("/user");
@@ -74,28 +120,34 @@ const HomePage = () => {
 
   const handleFetchMessages = async (chatId) => {
     setIsMessagesFetched(false);
+    setIsMessageLoading(true);
     navigate(`/user/ai-chatbot/?chat=${chatId}`);
-    await axios({
-      method: "POST",
-      url: `${baseUrl}/api/v1/ai/get-messages`,
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      data: {
-        chatId: chatId,
-      },
-    })
-      .then((res) => {
-        console.log(res?.data?.data, "messages fetched");
-        setIsMessagesFetched(true);
-        setMessages(res?.data?.data?.messages);
-      })
-      .catch((err) => {
-        console.log(err);
-        setIsMessagesFetched(false);
-        showErrorMessage(err?.response?.data?.message);
+
+    try {
+      const res = await axios({
+        method: "POST",
+        url: `${baseUrl}/api/v1/ai/get-messages`,
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        data: {
+          chatId: chatId,
+        },
       });
+
+      console.log(res?.data?.data, "messages fetched");
+      setMessages(res?.data?.data?.messages || []);
+    } catch (err) {
+      console.log(err);
+      showErrorMessage(err?.response?.data?.message);
+      setMessages([]);
+    } finally {
+      setIsMessagesFetched(true);
+      setIsMessageLoading(false);
+    }
   };
+
+  // ... (htmlParser function remains the same)
   const htmlParser = (response) => {
     if (!response) return null;
 
@@ -106,24 +158,22 @@ const HomePage = () => {
     let codeContent = [];
 
     lines.forEach((line, index) => {
-      // Improved image handling with regular expression
       const imageMatch = line.match(
-        /(https?:\/\/\S+\.(png|jpg|jpeg|gif)|[\w\d]+\.(png|jpg|jpeg|gif))/i
-      ); // Matches URLs or filenames
+        /(https?:\/\/\S+\.(png|jpg|jpeg|gif)|[\w\d]+\.(png|jpg|jpeg|gif))/i,
+      );
 
       if (imageMatch) {
         let imgSrc = imageMatch[0];
-        //If it's not a full URL, prepend the base URL
         if (!imgSrc.startsWith("http")) {
-          imgSrc = `${baseUrl}/${imgSrc}`; // baseUrl is needed here
+          imgSrc = `${baseUrl}/${imgSrc}`;
         }
         elements.push(
           <img
             key={index}
             src={imgSrc}
-            alt={`Image ${index + 1}`} // Better alt text
+            alt={`Image ${index + 1}`}
             className="max-w-full h-auto"
-          />
+          />,
         );
       } else if (line.startsWith("```")) {
         if (inCodeBlock) {
@@ -133,7 +183,7 @@ const HomePage = () => {
               className="bg-black p-3 rounded text-gray-300 font-mono overflow-x-auto"
             >
               {codeContent.join("\n")}
-            </pre>
+            </pre>,
           );
           codeContent = [];
         }
@@ -141,7 +191,7 @@ const HomePage = () => {
       } else if (inCodeBlock) {
         codeContent.push(line);
       } else if (/^#{1,6}\s/.test(line)) {
-        const headingLevel = line.match(/^#{1,6}/)[0].length;
+        const headingLevel = line.match(/^#{1,6}/).length;
         elements.push(
           React.createElement(
             `h${headingLevel}`,
@@ -151,8 +201,8 @@ const HomePage = () => {
                 headingLevel === 1 ? "2xl" : "xl"
               }`,
             },
-            line.replace(/^#{1,6}\s/, "")
-          )
+            line.replace(/^#{1,6}\s/, ""),
+          ),
         );
       } else if (/^\*\*(.*?)\*\*/.test(line)) {
         elements.push(
@@ -162,7 +212,7 @@ const HomePage = () => {
             dangerouslySetInnerHTML={{
               __html: line.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>"),
             }}
-          ></p>
+          ></p>,
         );
       } else if (/^\*(.*?)\*/.test(line)) {
         elements.push(
@@ -172,25 +222,25 @@ const HomePage = () => {
             dangerouslySetInnerHTML={{
               __html: line.replace(/\*(.*?)\*/g, "<em>$1</em>"),
             }}
-          ></p>
+          ></p>,
         );
       } else if (/^\d+\.\s/.test(line)) {
         elements.push(
           <li key={index} className="ml-5 list-decimal text-gray-400 mb-1">
             {line}
-          </li>
+          </li>,
         );
       } else if (/^-\s/.test(line)) {
         elements.push(
           <li key={index} className="ml-5 list-disc text-gray-400 mb-1">
             {line.replace(/^-\s/, "")}
-          </li>
+          </li>,
         );
       } else {
         elements.push(
           <p key={index} className="text-gray-300 mb-2">
             {line}
-          </p>
+          </p>,
         );
       }
     });
@@ -198,45 +248,68 @@ const HomePage = () => {
     return elements;
   };
 
-  const handleSendQuery = async () => {
-    if (query.trim() && query !== "" && query) {
-      // Save the query value before clearing it
-      const userQuery = query;
-      const newMessage = { role: "user", text: userQuery };
-      setMessages((prev) => [...prev, newMessage]);
-      setQuery("");
+  const handleSendQuery = useCallback(async () => {
+    if (!query.trim() || !chatIdParams) return;
 
-      try {
-        const res = await axios({
-          method: "POST",
-          url: `${baseUrl}/api/v1/ai/generate-text`,
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          data: {
-            chatId: chatIdParams,
-            question: userQuery,
-          },
-        });
+    const userQuery = query.trim();
+    const newUserMessage = { role: "user", text: userQuery };
 
-        // Try to retrieve chat id from header; fallback to chatIdParams if header is missing.
-        const newChatId = res.headers["x-chat-id"] || chatIdParams;
-        if (newChatId) {
-          navigate(`/user/ai-chatbot/?chat=${newChatId}`);
-        }
-        setMessages((prev) => [...prev, { role: "model", text: res.data }]);
-        handleFetchChats();
-        console.log(res);
-      } catch (err) {
-        console.error("Error sending query:", err);
-        setMessages((prev) => [
-          ...prev,
-          { role: "error", text: "An error occurred." },
-        ]);
+    setMessages((prev) => [...prev, newUserMessage]);
+    setQuery("");
+    setIsQuerySending(true);
+    setQuerySkeleton(true);
+
+    try {
+      const res = await axios({
+        method: "POST",
+        url: `${baseUrl}/api/v1/ai/generate-text`,
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        data: {
+          chatId: chatIdParams,
+          question: userQuery,
+        },
+      });
+
+      const newChatId = res.headers["x-chat-id"] || chatIdParams;
+      if (newChatId) {
+        navigate(`/user/ai-chatbot/?chat=${newChatId}`);
       }
-    }
-  };
 
+      // Add AI response with skeleton effect
+      const tempAIMessage = { role: "model", text: "", isLoading: true };
+      setMessages((prev) => [...prev, tempAIMessage]);
+
+      // Simulate typing effect or replace with actual response
+      setTimeout(() => {
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg === tempAIMessage
+              ? { ...tempAIMessage, text: res.data, isLoading: false }
+              : msg,
+          ),
+        );
+      }, 500);
+
+      handleFetchChats();
+    } catch (err) {
+      console.error("Error sending query:", err);
+      setError(err?.response?.data?.message);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "error",
+          text: "Sorry, something went wrong. Please try again.",
+        },
+      ]);
+    } finally {
+      setIsQuerySending(false);
+      setQuerySkeleton(false);
+    }
+  }, [query, chatIdParams, token, navigate]);
+
+  // ... (rest of your state and handlers remain the same - isMouseOver, editingChatId, etc.)
   const [isMouseOver, setIsMouseOver] = useState(null);
   const [editingChatId, setEditingChatId] = useState(null);
   const [chatNames, setChatNames] = useState({});
@@ -252,6 +325,7 @@ const HomePage = () => {
   const handleEdit = (chatId) => {
     setEditingChatId(chatId);
   };
+
   const handleSave = async (chatId, newChatName) => {
     await axios({
       method: "PUT",
@@ -305,11 +379,10 @@ const HomePage = () => {
   };
 
   const [imgQuery, setImgQuery] = useState(null);
-
   const formData = new FormData();
 
   const handleImageQuery = async (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files;
     const newMessage = { role: "user", text: URL.createObjectURL(file) };
     setMessages((prev) => [...prev, newMessage]);
     setImgQuery("");
@@ -319,46 +392,53 @@ const HomePage = () => {
       file: file,
       url: URL.createObjectURL(file),
     });
-    await axios({
-      method: "POST",
-      url: `${baseUrl}/api/v1/ai/generate-text-from-image`,
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      data: formData,
-    })
-      .then((res) => {
-        console.log(res.data.data);
-        setMessages((prev) => [
-          ...prev,
-          { role: "model", text: res?.data?.data },
-        ]);
-      })
-      .catch((err) => {
-        console.log(err);
-      });
-  };
-  const messagesContainerRef = useRef(null); // Ref for the message container
 
-  const scrollToBottom = () => {
+    setIsQuerySending(true);
+
+    try {
+      const res = await axios({
+        method: "POST",
+        url: `${baseUrl}/api/v1/ai/generate-text-from-image`,
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        data: formData,
+      });
+      console.log(res.data.data);
+      setMessages((prev) => [
+        ...prev,
+        { role: "model", text: res?.data?.data },
+      ]);
+    } catch (err) {
+      console.log(err);
+    } finally {
+      setIsQuerySending(false);
+    }
+  };
+
+  const messagesContainerRef = useRef(null);
+
+  const scrollToBottom = useCallback(() => {
     messagesContainerRef.current?.scrollTo({
       top: messagesContainerRef.current.scrollHeight,
       behavior: "smooth",
     });
-  };
+  }, []);
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, scrollToBottom]);
+
   return (
-    <div className="w-full  h-screen overflow-y-hidden bg-[#212121] flex items-stretch">
+    <div className="w-full h-screen overflow-y-hidden bg-[#212121] flex items-stretch">
+      {/* Sidebar - unchanged */}
       <div
-        className={`xl:w-[16%] xl:relative text-[14px] text-white bg-[#171717] h-full p-[15px] flex flex-col  items-start gap-[12px] w-[70%] sm:w-[40%] fixed left-0 top-0 z-[99] ${
+        className={`xl:w-[16%] xl:relative text-[14px] text-white bg-[#171717] h-full p-[15px] flex flex-col items-start gap-[12px] w-[70%] sm:w-[40%] fixed left-0 top-0 z-[99] ${
           openSidebar === true
             ? "translate-x-0 transition-all"
             : openSidebar === false
-            ? "translate-x-[-100vw] transition-all"
-            : "translate-x-0"
+              ? "translate-x-[-100vw] transition-all"
+              : "translate-x-0"
         } xl:translate-x-0 `}
       >
         <div className="w-full flex items-center justify-between xl:justify-end">
@@ -366,17 +446,14 @@ const HomePage = () => {
             onClick={handleOpenSidebar}
             className="xl:hidden cursor-pointer"
           />
-          <div className="w-[30px] h-[30px]  text-[16px] flex justify-center items-center border cursor-pointer border-white rounded-[100px] self-end">
-            <FaPlus
-              onClick={() => {
-                handleCreateNewChat();
-              }}
-              className=" z-[5]  "
-            />
-          </div>
+          {user?.messageLimit !== 0 ? (
+            <div className="w-[30px] h-[30px] text-[16px] flex justify-center items-center border cursor-pointer border-white rounded-[100px] self-end">
+              <FaPlus onClick={handleCreateNewChat} className="z-" />
+            </div>
+          ) : null}
         </div>
         <h3 className="font-semibold">Recent Chats</h3>
-        <div className="w-full h-[620px] flex flex-col hide-scrollbar  items-start gap-[12px] overflow-y-scroll">
+        <div className="w-full h-[620px] flex flex-col hide-scrollbar items-start gap-[12px] overflow-y-scroll">
           {chats?.map((item) => {
             let text;
             text = item?.chatName
@@ -450,21 +527,34 @@ const HomePage = () => {
           })}
         </div>
       </div>
-      <div className="w-full xl:w-[82%] relative overflow-y-scroll hide-scrollbar  h-full p-[15px] flex flex-col items-center gap-[30px] justify-center ">
-        <div className="w-full text-white gap-[12px] fixed top-[20px] right-[20px] left-0 px-[20px]  flex justify-between xl:justify-end items-center">
+
+      {/* Main Chat Area */}
+      <div className="w-full xl:w-[82%] relative overflow-y-scroll hide-scrollbar h-full p-[15px] flex flex-col items-center gap-[30px] justify-center">
+        <div className="w-full text-white gap-[12px] fixed top-[20px] right-[20px] left-0 px-[20px] flex justify-between xl:justify-end items-center">
           <FaBarsStaggered
             onClick={handleOpenSidebar}
             className="text-[20px] cursor-pointer xl:hidden"
           />
           <div className="flex items-center gap-[12px]">
+            {!chatIdParams ? null : (
+              <button
+                onClick={() => {
+                  navigate("/user/");
+                }}
+                className="px-[20px] py-[7px] text-white rounded-[7px] bg-black"
+              >
+                Back
+              </button>
+            )}
             <button
               onClick={() => {
-                navigate("/user/");
+                navigate("/user/pricing");
               }}
               className="px-[20px] py-[7px] text-white rounded-[7px] bg-black"
             >
-              Back
+              Pricing
             </button>
+
             <button
               onClick={() => {
                 localStorage.removeItem("userToken");
@@ -476,31 +566,36 @@ const HomePage = () => {
             </button>
           </div>
         </div>
-        <div className="w-full xl:w-[85%]  flex flex-col items-center gap-[20px]">
-          {messages?.length !== 0 ? (
+
+        <div className="w-full xl:w-[85%] flex flex-col items-center gap-[20px]">
+          {/* Messages Area with Skeletons */}
+          {isMessageLoading ? (
+            <FetchingMessagesSkeleton />
+          ) : messages?.length !== 0 ? (
             <div
               ref={messagesContainerRef}
               className="w-full h-[550px] hide-scrollbar overflow-y-scroll font-normal flex flex-col gap-[12px] text-white p-4"
             >
-              {" "}
               {messages?.map((item, index) => (
                 <div key={index} className="w-full flex flex-col gap-[10px]">
                   {item?.role === "user" ? (
-                    <div className="flex self-end w-[90%] xl:w-[70%] p-[20px] bg-black rounded-[7px]">
-                      {" "}
+                    <div className="flex self-end w-auto max-w-[90%] xl:w-auto xl:max-w-[70%] p-[20px] bg-black rounded-[7px]">
                       <p className="text-left">
                         <strong>{htmlParser(item?.text)}</strong>
                       </p>
                     </div>
                   ) : item?.role === "model" ? (
                     <div
-                      className={`${
-                        isMessagesFetched === false ? "animate-pulse" : null
-                      } w-[90%] flex self-start bg-[#171717] p-[20px] overflow-scroll hide-scrollbar xl:min-w-[70%] xl:max-w-[85%] rounded-[7px]`}
+                      className={`w-[90%] flex self-start bg-[#171717] p-[20px] overflow-scroll hide-scrollbar xl:min-w-[70%] xl:max-w-[85%] rounded-[7px] ${
+                        item.isLoading ? "animate-pulse" : ""
+                      }`}
                     >
-                      {" "}
                       <span className="text-left">
-                        {htmlParser(item?.text)}
+                        {item.isLoading ? (
+                          <div className="h-4 bg-gray-600 rounded animate-pulse"></div>
+                        ) : (
+                          htmlParser(item?.text)
+                        )}
                       </span>
                     </div>
                   ) : null}
@@ -512,48 +607,72 @@ const HomePage = () => {
               What Can I help with?
             </h1>
           )}
+
+          {/* Input Area with Skeleton */}
           {isMessagesFetched === true ? (
-            <div className="w-full xl:w-[70%] p-[15px] bg-[#2f2f2f] text-white font-normal rounded-[12px] text-[16px] flex flex-col gap-[12px]">
-              <div className="flex items-center gap-[12px]">
-                <div className="flex  gap-[7px] justify-center items-center relative">
-                  <input
-                    type="file"
-                    name="imgQuery"
-                    id="imgQuery"
-                    onChange={handleImageQuery}
-                    className="absolute top-0 left-0 w-full h-full cursor-pointer opacity-0"
-                  />
-                  <FaPaperclip />
-                </div>
-                <textarea
-                  type="text"
-                  name="query"
-                  id="query"
-                  onChange={handleQueryValue}
-                  value={query}
-                  className="w-full h-[70px] bg-transparent outline-none"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && query.trim()) {
-                      handleSendQuery();
-                    }
-                  }}
-                  placeholder="Enter Your Query here"
-                />
-                <FaTelegram
-                  onClick={handleSendQuery}
-                  className="text-[28px] cursor-pointer"
-                />
+            querySkeleton || isQuerySending ? (
+              <QuerySendingSkeleton />
+            ) : (
+              <div className="w-full xl:w-[70%] p-[15px] bg-[#2f2f2f] text-white font-normal rounded-[12px] text-[16px] flex flex-col gap-[12px]">
+                {error !== null || user?.messageLimit <= 0 ? (
+                  <Link to={"/user/pricing"} className="w-full ">
+                    <p>{error}</p>
+                  </Link>
+                ) : (
+                  <div className="flex items-center gap-[12px]">
+                    <div className="flex gap-[7px] justify-center items-center relative">
+                      <input
+                        type="file"
+                        name="imgQuery"
+                        id="imgQuery"
+                        onChange={handleImageQuery}
+                        className="absolute top-0 left-0 w-full h-full cursor-pointer opacity-0"
+                      />
+                      <FaPaperclip />
+                    </div>
+                    <textarea
+                      type="text"
+                      name="query"
+                      id="query"
+                      onChange={handleQueryValue}
+                      value={query}
+                      className="w-full h-[70px] bg-transparent outline-none resize-none"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey && query.trim()) {
+                          e.preventDefault();
+                          handleSendQuery();
+                        }
+                      }}
+                      placeholder="Enter Your Query here"
+                    />
+                    <FaTelegram
+                      onClick={handleSendQuery}
+                      className={`text-[28px] cursor-pointer transition-colors ${
+                        query.trim() ? "text-blue-400" : "text-gray-500"
+                      }`}
+                    />
+                  </div>
+                )}
               </div>
-            </div>
+            )
           ) : (
             <div className="w-full flex flex-col items-center justify-center gap-[20px] text-center text-white">
-              <p>Please Create a Chat First! </p>
-              <button
-                onClick={handleCreateNewChat}
-                className="px-[20px] py-[10px] rounded-[7px] bg-black text-white"
-              >
-                Create Chat
-              </button>
+              <p>Please Create a Chat First!</p>
+              {user?.messageLimit <= 0 ? (
+                <Link
+                  className="px-[20px] py-[10px] rounded-[7px] bg-black text-white hover:bg-gray-800 transition-colors"
+                  to={"/user/pricing"}
+                >
+                  Upgrade your plan to use the platform !
+                </Link>
+              ) : (
+                <button
+                  onClick={handleCreateNewChat}
+                  className="px-[20px] py-[10px] rounded-[7px] bg-black text-white hover:bg-gray-800 transition-colors"
+                >
+                  Create Chat
+                </button>
+              )}
             </div>
           )}
         </div>

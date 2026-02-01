@@ -11,7 +11,7 @@ import {
   useLocation,
 } from "react-router-dom";
 import RegisterPage from "./pages/registerPage";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
 import { baseUrl } from "./utils/apiSettings";
 import ForgotPasswordPage from "./pages/forgotPasswordPage";
@@ -26,6 +26,7 @@ import Home from "./pages/home";
 function App() {
   const urlParams = new URLSearchParams(window.location.search);
   const token = urlParams.get("token");
+  const [userDetails, setUserDetails] = useState(null);
   console.log(urlParams, "lacas");
   const navigate = useNavigate();
   if (token) {
@@ -45,9 +46,13 @@ function App() {
     })
       .then((res) => {
         console.log(res);
+        setUserDetails(res?.data?.data?.data);
       })
       .catch((err) => {
         console.log(err);
+        if (err?.response?.status) {
+          navigate("/auth/user/login");
+        }
         localStorage.getItem("userToken");
         if (location.pathname === "/user/") {
           navigate("/auth/user/login");
@@ -77,7 +82,7 @@ function App() {
             path="ai-chatbot"
             element={
               <PrivateRoutes>
-                <HomePage />
+                <HomePage user={userDetails} />
               </PrivateRoutes>
             }
           />
@@ -86,7 +91,7 @@ function App() {
             path="pricing"
             element={
               <PrivateRoutes>
-                <PricingPage />
+                <PricingPage user={userDetails} />
               </PrivateRoutes>
             }
           />
