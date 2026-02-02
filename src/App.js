@@ -66,8 +66,8 @@ function App() {
     <div className="App">
       <ToastContainer />
       <Routes>
-        <Route path="/" element={<Navigate to={"/home"} />} />
-        <Route path="/home" element={<Navigate to={"/home"} />} />
+        <Route path="/" element={<Navigate to={"/auth/user/login"} />} />
+        <Route path="/home" element={<Navigate to={"/auth/user/login"} />} />
         <Route path="*" element={<PageNotFound />} />
         <Route path="/auth/user">
           <Route path="login" element={<LoginPage />} />
