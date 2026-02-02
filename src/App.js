@@ -67,7 +67,7 @@ function App() {
       <ToastContainer />
       <Routes>
         <Route path="/" element={<Navigate to={"/home"} />} />
-        <Route path="/home" element={<Home />} />
+        <Route path="/home" element={<Navigate to={"/home"} />} />
         <Route path="*" element={<PageNotFound />} />
         <Route path="/auth/user">
           <Route path="login" element={<LoginPage />} />
