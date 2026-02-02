@@ -9,6 +9,8 @@ import { loadStripe } from "@stripe/stripe-js";
 const root = ReactDOM.createRoot(document.getElementById("root"));
 const clientId = process.env.REACT_APP_GOOGLE_CLIENT;
 const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_CLIENT);
+console.log(clientId, "clientId");
+console.log(process.env.REACT_APP_BACKEND_LIVE_URL, "abcked url");
 
 root.render(
   <React.StrictMode>
@@ -19,5 +21,5 @@ root.render(
         </Router>
       </Elements>
     </GoogleOAuthProvider>
-  </React.StrictMode>
+  </React.StrictMode>,
 );
