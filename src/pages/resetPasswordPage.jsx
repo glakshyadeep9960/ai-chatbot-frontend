@@ -1,8 +1,6 @@
 import React from "react";
-import Img from "../assets/1.avif";
-import { GoogleLogin } from "@react-oauth/google";
 import { useState } from "react";
-import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import { baseUrl } from "../utils/apiSettings";
 import { showErrorMessage, showSuccessMessage } from "../utils/toast";
